@@ -14,7 +14,7 @@ class LLMClient:
     This handles authentication and the generation of text using the LLM.
     """
     
-    def __init__(self, model_name: str = "gemini-2.5-pro"):
+    def __init__(self, model_name: str = "gemini-3.5-flash"):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             logger.warning("GEMINI_API_KEY is not set in the environment. LLM calls will fail.")

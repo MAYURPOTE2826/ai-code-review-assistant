@@ -1,7 +1,11 @@
 import streamlit as st
 import os
+import sys
 import json
 from datetime import datetime
+
+# Add project root directory to sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 st.set_page_config(page_title="CodeInsight AI", layout="wide", page_icon="🧠")
 
@@ -29,8 +33,66 @@ def get_services():
 
 db, repo_manager, chunker, embedder, vector_store = get_services()
 
-st.title("🧠 CodeInsight AI")
-st.markdown("*An AI-powered repository analysis and code review assistant using Gemini 2.5 Pro.*")
+# Custom CSS for Premium UI
+st.markdown("""
+<style>
+    /* Clean Global Typography */
+    .stApp {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Gradient Hero Text */
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #7928CA, #FF0080);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0px;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+        color: #8b949e;
+        margin-bottom: 2rem;
+    }
+    
+    /* Gradient Buttons */
+    .stButton > button {
+        background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(106, 17, 203, 0.4);
+        color: white !important;
+    }
+    
+    /* Modern Input Focus Shadows */
+    .stTextInput > div > div > input:focus, .stTextArea > div > textarea:focus {
+        border-color: #7928CA;
+        box-shadow: 0 0 0 1px #7928CA;
+    }
+    
+    /* Premium Metric Cards */
+    [data-testid="stMetricValue"] {
+        font-size: 2.2rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #6a11cb, #2575fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<h1 class="hero-title">🧠 CodeInsight AI</h1>', unsafe_allow_html=True)
+st.markdown('<p class="hero-subtitle">An AI-powered repository analysis and code review assistant using Gemini 3.5 Flash.</p>', unsafe_allow_html=True)
 
 # Sidebar for Repository Management
 with st.sidebar:
@@ -69,7 +131,12 @@ with st.sidebar:
                         embedded_chunks = embedder.embed_chunks(all_chunks)
                         vector_store.insert_chunks(str(repo_id), embedded_chunks)
                         
-                    st.success(f"Analyzed {len(python_files)} files. Stored {len(embedded_chunks)} vector chunks.")
+                    st.success("Analysis Complete!")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Python Files Parsed", len(python_files))
+                    with col2:
+                        st.metric("Vector Embeddings", len(embedded_chunks))
                 except Exception as e:
                     st.error(f"Error: {e}")
         else:
@@ -114,14 +181,24 @@ if 'current_repo_id' in st.session_state:
     # Specialized Agents UI
     with tab2:
         st.subheader("Run Code Review")
-        agent_type = st.selectbox("Select AI Agent", [
-            "Bug Detection", "Security Review", "Performance Optimization",
-            "Documentation Generation", "Test Generation"
-        ])
         
-        code_input = st.text_area("Paste Python code to review:", height=200)
+        col_agent, col_code = st.columns([1, 2])
         
-        if st.button("Analyze Code"):
+        with col_agent:
+            st.markdown("### 1. Select Agent")
+            agent_type = st.selectbox("Available Experts", [
+                "Bug Detection", "Security Review", "Performance Optimization",
+                "Documentation Generation", "Test Generation"
+            ], label_visibility="collapsed")
+            
+            st.markdown("### 2. Execute")
+            analyze_btn = st.button("🚀 Analyze Code", use_container_width=True)
+            
+        with col_code:
+            st.markdown("### Code Snippet")
+            code_input = st.text_area("Paste Python code to review:", height=250, label_visibility="collapsed")
+        
+        if analyze_btn:
             with st.spinner(f"Running {agent_type}..."):
                 if agent_type == "Bug Detection":
                     agent = BugDetectionAgent()
@@ -134,8 +211,52 @@ if 'current_repo_id' in st.session_state:
                 else:
                     agent = TestGenerationAgent()
                     
-                response = agent.analyze(code_input)
-                st.markdown(response)
+                try:
+                    response_text = agent.analyze(code_input)
+                    review_data = json.loads(response_text)
+                    
+                    # Display metrics and summary
+                    c1, c2 = st.columns(2)
+                    c1.metric("Severity Level", str(review_data.get("severity_level", "unknown")).upper())
+                    c2.metric("Estimated Risk", str(review_data.get("estimated_risk", "unknown")).upper())
+                    
+                    st.info(review_data.get("summary", "Analysis completed."))
+                    
+                    # Organize results into tabs
+                    t_issues, t_improve, t_pos = st.tabs(["🐛 Issues", "✨ Improvements", "✅ Positive Aspects"])
+                    
+                    with t_issues:
+                        issues = review_data.get("issues", [])
+                        if not issues:
+                            st.success("No critical issues found!")
+                        for issue in issues:
+                            with st.expander(f"{str(issue.get('type', 'issue')).upper()} at {issue.get('line', 'Unknown')}", expanded=True):
+                                st.write(f"**Issue:** {issue.get('issue')}")
+                                st.write(f"**Impact:** {issue.get('impact')}")
+                                if "suggestion" in issue:
+                                    st.markdown("**Suggestion:**")
+                                    st.code(issue["suggestion"])
+                                    
+                    with t_improve:
+                        improvements = review_data.get("improvements", [])
+                        if not improvements:
+                            st.info("No improvements suggested.")
+                        for imp in improvements:
+                            with st.expander(f"Improve {imp.get('area', 'code')} (Priority: {str(imp.get('priority', 'low')).upper()})"):
+                                st.write(f"**Current:** {imp.get('current')}")
+                                st.markdown("**Suggestion:**")
+                                st.code(imp.get("suggestion", ""))
+                                
+                    with t_pos:
+                        positives = review_data.get("positive_aspects", [])
+                        for pos in positives:
+                            st.markdown(f"- ✅ {pos}")
+                            
+                except json.JSONDecodeError:
+                    st.error("AI returned invalid JSON format.")
+                    st.code(response_text)
+                except Exception as e:
+                    st.error(f"Error parsing analysis: {e}")
 
     # Export Features
     with tab3:

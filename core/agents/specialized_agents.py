@@ -9,6 +9,7 @@ class BugDetectionAgent(BaseAgent):
             "any logical errors, edge cases that are not handled, or potential runtime exceptions. "
             "If the code is perfectly fine, just say 'No bugs detected'."
         )
+        self.focus_areas = ["Logic errors", "Edge cases", "Runtime exceptions", "Null/None checks"]
 
 class SecurityReviewAgent(BaseAgent):
     """Specialized agent for finding security vulnerabilities."""
@@ -19,6 +20,7 @@ class SecurityReviewAgent(BaseAgent):
             "such as SQL Injection, XSS, insecure deserialization, hardcoded secrets, or weak cryptography. "
             "Format your findings as a strict security audit."
         )
+        self.focus_areas = ["SQL Injection", "XSS", "Insecure deserialization", "Hardcoded secrets", "Weak cryptography"]
 
 class PerformanceOptimizationAgent(BaseAgent):
     """Specialized agent for optimizing code."""
@@ -28,6 +30,7 @@ class PerformanceOptimizationAgent(BaseAgent):
             "You are a Performance Engineer. Analyze the Python code and suggest ways to make it faster "
             "or use less memory. Look for O(N^2) loops, unnecessary deep copies, or inefficient data structures."
         )
+        self.focus_areas = ["Algorithmic complexity", "Memory usage", "Database query optimization", "Unnecessary copies"]
 
 class DocumentationAgent(BaseAgent):
     """Specialized agent for generating clean English explanations and docstrings."""
@@ -37,6 +40,7 @@ class DocumentationAgent(BaseAgent):
             "You are a Technical Writer. Read the provided Python code and explain exactly what it does "
             "in plain English. Then, provide a perfectly formatted PEP 257 compliant docstring for it."
         )
+        self.focus_areas = ["Code readability", "PEP 257 docstrings", "Variable naming", "Clear explanations"]
 
 class TestGenerationAgent(BaseAgent):
     """Specialized agent for writing unit tests."""
@@ -46,6 +50,7 @@ class TestGenerationAgent(BaseAgent):
             "You are a QA Automation Engineer. Write a comprehensive suite of `pytest` unit tests "
             "for the provided Python code. Include happy paths and edge cases."
         )
+        self.focus_areas = ["Happy paths", "Edge cases", "Mocking external dependencies", "Test coverage"]
 
 class RepositorySummarizationAgent(BaseAgent):
     """Specialized agent for high-level repository overviews."""

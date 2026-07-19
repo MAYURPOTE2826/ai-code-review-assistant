@@ -1,4 +1,5 @@
 import chromadb
+from chromadb.config import Settings
 import uuid
 import logging
 from typing import List, Dict, Any
@@ -21,7 +22,7 @@ class VectorStore:
             db_path (str): The local directory where ChromaDB will store its files.
         """
         self.db_path = db_path
-        self.client = chromadb.PersistentClient(path=db_path)
+        self.client = chromadb.PersistentClient(path=db_path, settings=Settings(anonymized_telemetry=False))
         
     def get_or_create_collection(self, repo_id: str):
         """
@@ -33,8 +34,8 @@ class VectorStore:
             repo_id (str): A unique identifier for the repository (e.g., its name or DB ID).
         """
         # ChromaDB collection names must be valid alphanumeric strings without special characters.
-        # We replace any invalid chars with underscores.
-        safe_name = "".join([c if c.isalnum() else "_" for c in repo_id])
+        # We replace any invalid chars with underscores and ensure it is at least 3 characters long.
+        safe_name = "repo_" + "".join([c if c.isalnum() else "_" for c in repo_id])
         return self.client.get_or_create_collection(name=safe_name)
 
     def insert_chunks(self, repo_id: str, chunks: List[Dict]):
@@ -98,7 +99,8 @@ class VectorStore:
             List[Dict[str, Any]]: A list of results containing the document, metadata, and distance.
         """
         try:
-            collection = self.client.get_collection(name="".join([c if c.isalnum() else "_" for c in repo_id]))
+            safe_name = "repo_" + "".join([c if c.isalnum() else "_" for c in repo_id])
+            collection = self.client.get_collection(name=safe_name)
         except ValueError:
             logger.error(f"Collection for {repo_id} does not exist.")
             return []
